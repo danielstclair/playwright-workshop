@@ -1,10 +1,19 @@
-import { test, expect } from '@playwright/test'
+import { test as base, expect } from '@playwright/test'
 
-test('has a title', async ({ page }) => {
-  await page.goto('/')
-  // check if page has a title
+class HomePage {
+  constructor(public page: any) {}
+  signIn = async () => {
+    this.page.goto('/')
+    const signInButton = this.page.getByRole('button', { name: 'Sign In' })
+    await signInButton.click()
+    await this.page.waitForTimeout(1000)
+  }
+}
 
-  await expect(page).toHaveTitle(/Create Next App/);
+const test = base.extend<{ homePage: HomePage }>({
+  homePage: async ({ page }, use) => {
+    await use(new HomePage(page))
+  },
 })
 
 test.describe('Home page', () => {
@@ -16,22 +25,16 @@ test.describe('Home page', () => {
     await expect(page.getByTestId('coworkers-section')).not.toBeVisible()
     await expect(page.getByRole('button', { name: 'Sign In' })).toBeVisible()
   })
-  test('shows user information when logged in', async ({ page }) => {
-    await page.goto('/')
-    const signInButton = page.getByRole('button', { name: 'Sign In' })
-    await signInButton.click()
-    await page.waitForTimeout(1000)
+  test('shows user information when logged in', async ({ page, homePage }) => {
+    await homePage.signIn()
     await expect(page.getByTestId('company')).toBeVisible()
     await expect(page.getByTestId('position')).toBeVisible()
     const coworkersList = page.getByTestId('coworkers-list')
     await expect(coworkersList).toBeVisible()
     await expect(coworkersList.getByText('Dwight Schrute')).toBeVisible()
   })
-  test('can logout', async ({ page }) => {
-    await page.goto('/')
-    const signInButton = page.getByRole('button', { name: 'Sign In' })
-    await signInButton.click()
-    await page.waitForTimeout(1000)
+  test('can logout', async ({ page, homePage }) => {
+    await homePage.signIn()
     await expect(page.getByTestId('company')).toBeVisible()
     await expect(page.getByTestId('position')).toBeVisible()
     const signOutButton = page.getByRole('button', { name: 'Sign Out' })
